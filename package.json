@@ -1,0 +1,52 @@
+{
+  "name": "ishi-music-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy": "node index.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "extract-cookies": "node auto_extract_cookies.js",
+    "extract-cookies-python": "./activate_venv.sh python auto_extract_cookies.py",
+    "setup-youtube": "./setup_cookie_automation.sh",
+    "setup-venv": "./activate_venv.sh",
+    "venv": "./activate_venv.sh"
+  },
+  "keywords": [
+    "discord",
+    "music",
+    "bot",
+    "discord.js",
+    "discord-player",
+    "youtube",
+    "spotify"
+  ],
+  "author": "Ishi Music Bot Developer",
+  "license": "ISC",
+  "description": "A high-quality Discord music bot with advanced features including multi-source support, queue management, and rich embeds.",
+  "dependencies": {
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
+    "@distube/soundcloud": "^2.0.4",
+    "@distube/spotify": "^2.0.2",
+    "@distube/youtube": "^1.0.4",
+    "@distube/yt-dlp": "^2.0.1",
+    "@distube/ytdl-core": "^4.16.12",
+    "@distube/ytpl": "^1.2.3",
+    "cookie-parser": "^1.4.7",
+    "discord.js": "^14.22.1",
+    "distube": "^5.0.7",
+    "dotenv": "^17.2.1",
+    "ffmpeg-static": "^5.2.0",
+    "fs-extra": "^11.3.1",
+    "node-cron": "^4.2.1",
+    "nodemon": "^3.1.10",
+    "play-dl": "^1.9.7",
+    "puppeteer": "^23.10.4",
+    "sodium-native": "^5.0.8",
+    "ytdl-core": "^4.11.5",
+    "ytmusic-api": "^5.3.0",
+    "ytsr": "^3.8.4"
+  }
+}
