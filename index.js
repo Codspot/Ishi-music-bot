@@ -19,25 +19,53 @@ const Utils = require("./utils");
 // Function to load YouTube cookies
 function loadYouTubeCookies() {
   try {
-    const cookiesPath =
-      process.env.YOUTUBE_COOKIES_PATH || "./youtube_cookies.json";
+    const cookiesPath = process.env.YOUTUBE_COOKIES_PATH || "./cookies.txt";
     if (fs.existsSync(cookiesPath)) {
-      const cookiesData = JSON.parse(fs.readFileSync(cookiesPath, "utf8"));
-      console.log("✅ YouTube Premium cookies loaded successfully");
-
-      // Convert to cookie string format
-      const cookieString = Object.entries(cookiesData)
-        .map(([name, value]) => `${name}=${value}`)
-        .join("; ");
-
-      return cookieString;
+      const cookiesContent = fs.readFileSync(cookiesPath, "utf8");
+      
+      // Parse Netscape cookie format
+      const youtubeCookies = [];
+      const lines = cookiesContent.split('\n');
+      
+      for (const line of lines) {
+        // Skip comments and empty lines
+        if (line.startsWith('#') || line.trim() === '') continue;
+        
+        const parts = line.split('\t');
+        if (parts.length >= 7 && parts[0].includes('youtube.com')) {
+          const domain = parts[0];
+          const flag = parts[1];
+          const path = parts[2];
+          const secure = parts[3];
+          const expiration = parts[4];
+          const name = parts[5];
+          const value = parts[6];
+          
+          youtubeCookies.push({
+            name: name,
+            value: value,
+            domain: domain.startsWith('.') ? domain : '.' + domain,
+            path: path,
+            secure: secure === 'TRUE',
+            httpOnly: false
+          });
+        }
+      }
+      
+      if (youtubeCookies.length > 0) {
+        console.log(`✅ Loaded ${youtubeCookies.length} YouTube cookies from cookies.txt`);
+        return youtubeCookies;
+      } else {
+        console.log("⚠️ No YouTube cookies found in cookies.txt");
+        return [];
+      }
     } else {
-      console.log("ℹ️ No YouTube cookies file found. Using free tier.");
-      return "";
+      console.log("ℹ️ No cookies.txt file found. Using free tier.");
+      return [];
     }
   } catch (error) {
     console.error("⚠️ Error loading YouTube cookies:", error.message);
-    return "";
+    return [];
   }
 }
 
@@ -62,7 +90,7 @@ const distube = new DisTube(client, {
   plugins: [
     // YouTube first - more content available (user preference)
     new YouTubePlugin({
-      cookies: youtubeCookies ? [youtubeCookies] : [],
+      cookies: youtubeCookies,
       ytdlOptions: {
         quality: "highestaudio",
         highWaterMark: 1 << 25,
@@ -71,8 +99,8 @@ const distube = new DisTube(client, {
         // Render-friendly headers
         requestOptions: {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            ...(youtubeCookies && !isRender ? { cookie: youtubeCookies } : {}),
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           },
         },
       },
