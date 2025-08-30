@@ -22,17 +22,17 @@ function loadYouTubeCookies() {
     const cookiesPath = process.env.YOUTUBE_COOKIES_PATH || "./cookies.txt";
     if (fs.existsSync(cookiesPath)) {
       const cookiesContent = fs.readFileSync(cookiesPath, "utf8");
-      
+
       // Parse Netscape cookie format
       const youtubeCookies = [];
-      const lines = cookiesContent.split('\n');
-      
+      const lines = cookiesContent.split("\n");
+
       for (const line of lines) {
         // Skip comments and empty lines
-        if (line.startsWith('#') || line.trim() === '') continue;
-        
-        const parts = line.split('\t');
-        if (parts.length >= 7 && parts[0].includes('youtube.com')) {
+        if (line.startsWith("#") || line.trim() === "") continue;
+
+        const parts = line.split("\t");
+        if (parts.length >= 7 && parts[0].includes("youtube.com")) {
           const domain = parts[0];
           const flag = parts[1];
           const path = parts[2];
@@ -40,20 +40,22 @@ function loadYouTubeCookies() {
           const expiration = parts[4];
           const name = parts[5];
           const value = parts[6];
-          
+
           youtubeCookies.push({
             name: name,
             value: value,
-            domain: domain.startsWith('.') ? domain : '.' + domain,
+            domain: domain.startsWith(".") ? domain : "." + domain,
             path: path,
-            secure: secure === 'TRUE',
-            httpOnly: false
+            secure: secure === "TRUE",
+            httpOnly: false,
           });
         }
       }
-      
+
       if (youtubeCookies.length > 0) {
-        console.log(`✅ Loaded ${youtubeCookies.length} YouTube cookies from cookies.txt`);
+        console.log(
+          `✅ Loaded ${youtubeCookies.length} YouTube cookies from cookies.txt`
+        );
         return youtubeCookies;
       } else {
         console.log("⚠️ No YouTube cookies found in cookies.txt");
