@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: ishi-music-bot
+    env: node
+    plan: free
+    region: oregon # Change to your preferred region
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UV_THREADPOOL_SIZE
+        value: "128"
+    # Auto-scaling settings for free tier
+    numInstances: 1
+    # Build settings
+    buildFilter:
+      paths:
+        - package.json
+        - package-lock.json
+        - "**/*.js"
+      ignoredPaths:
+        - "**/*.md"
+        - ".gitignore"
+        - "vercel.json"

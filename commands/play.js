@@ -81,12 +81,23 @@ module.exports = {
     try {
       console.log(`[DEBUG] Playing with Distube: "${query}"`);
 
-      // Try different search strategies with SoundCloud priority
-      const searchStrategies = [
-        `scsearch:${query}`, // SoundCloud first (most reliable)
-        query, // Original query (tries all sources)
-        `ytsearch:${query}`, // YouTube search as fallback
-      ];
+      // Render-optimized search strategies (prioritize reliable sources)
+      const isRender =
+        process.env.RENDER === "true" || process.env.NODE_ENV === "production";
+
+      const searchStrategies = isRender
+        ? [
+            // For Render: Prioritize SoundCloud heavily to avoid YouTube bot detection
+            `scsearch:${query}`, // SoundCloud first (most reliable on cloud)
+            `scsearch:${query} official`, // SoundCloud with "official" keyword
+            query, // Original query as fallback
+          ]
+        : [
+            // For local development: Try all sources
+            `scsearch:${query}`, // SoundCloud first
+            query, // Original query (tries all sources)
+            `ytsearch:${query}`, // YouTube search as fallback
+          ];
 
       let lastError = null;
 
