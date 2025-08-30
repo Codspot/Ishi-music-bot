@@ -51,7 +51,7 @@ const client = new Client({
   ],
 });
 
-// Create Distube instance with plugins
+// Create Distube instance with plugins (Render-optimized)
 const youtubeCookies = loadYouTubeCookies();
 
 const distube = new DisTube(client, {
@@ -60,6 +60,7 @@ const distube = new DisTube(client, {
   emitAddListWhenCreatingQueue: false,
   nsfw: false,
   plugins: [
+    // YouTube first - more content available (user preference)
     new YouTubePlugin({
       cookies: youtubeCookies ? [youtubeCookies] : [],
       ytdlOptions: {
@@ -67,17 +68,19 @@ const distube = new DisTube(client, {
         highWaterMark: 1 << 25,
         filter: "audioonly",
         format: "audioonly",
+        // Render-friendly headers
         requestOptions: {
           headers: {
-            cookie: youtubeCookies,
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            ...(youtubeCookies && !isRender ? { cookie: youtubeCookies } : {}),
           },
         },
       },
     }),
+    // SoundCloud as fallback
     new SoundCloudPlugin(),
     new SpotifyPlugin(),
+    // YtDlp as fallback
     new YtDlpPlugin({
       update: false,
     }),

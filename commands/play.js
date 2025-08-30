@@ -81,29 +81,41 @@ module.exports = {
     try {
       console.log(`[DEBUG] Playing with Distube: "${query}"`);
 
-      // Render-optimized search strategies (prioritize reliable sources)
-      const isRender =
-        process.env.RENDER === "true" || process.env.NODE_ENV === "production";
-
-      const searchStrategies = isRender
-        ? [
-            // For Render: Prioritize SoundCloud heavily to avoid YouTube bot detection
-            `scsearch:${query}`, // SoundCloud first (most reliable on cloud)
-            `scsearch:${query} official`, // SoundCloud with "official" keyword
-            query, // Original query as fallback
-          ]
-        : [
-            // For local development: Try all sources
-            `scsearch:${query}`, // SoundCloud first
-            query, // Original query (tries all sources)
-            `ytsearch:${query}`, // YouTube search as fallback
-          ];
+      // YouTube-priority search strategies with enhanced bot detection workarounds
+      const isRender = process.env.RENDER === "true" || process.env.NODE_ENV === "production";
+      
+      const searchStrategies = isRender ? [
+        // For Render: YouTube-first with various search formats to avoid detection
+        query, // Original query (tries YouTube first)
+        `ytsearch:${query}`, // Explicit YouTube search
+        `ytsearch:${query} official`, // YouTube with "official" keyword
+        `ytsearch:${query} music video`, // YouTube with "music video"
+        `ytsearch:${query} lyrics`, // YouTube with "lyrics" keyword
+        `ytsearch:${query} audio`, // YouTube with "audio" keyword
+        `ytsearch:${query} song`, // YouTube with "song" keyword
+        `scsearch:${query}`, // SoundCloud as final fallback
+      ] : [
+        // For local development: YouTube priority with fewer attempts
+        query, // Original query (tries YouTube first)
+        `ytsearch:${query}`, // YouTube search
+        `ytsearch:${query} official`, // YouTube with keywords
+        `ytsearch:${query} music video`, // YouTube music video
+        `scsearch:${query}`, // SoundCloud fallback
+      ];
 
       let lastError = null;
+      let attemptCount = 0;
 
       for (const searchQuery of searchStrategies) {
         try {
-          console.log(`[DEBUG] Trying search strategy: ${searchQuery}`);
+          attemptCount++;
+          console.log(`[DEBUG] Attempt ${attemptCount}: Trying search strategy: ${searchQuery}`);
+
+          // Add progressive delay between attempts to avoid rate limiting
+          if (attemptCount > 1 && isRender) {
+            const delay = Math.min(attemptCount * 500, 2000); // Progressive delay, max 2 seconds
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
 
           if (skip) {
             // Skip current song and play new one
