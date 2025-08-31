@@ -53,16 +53,11 @@ function loadYouTubeCookies() {
       }
 
       if (youtubeCookies.length > 0) {
-        console.log(
-          `✅ Loaded ${youtubeCookies.length} YouTube cookies from cookies.txt`
-        );
         return youtubeCookies;
       } else {
-        console.log("⚠️ No YouTube cookies found in cookies.txt");
         return [];
       }
     } else {
-      console.log("ℹ️ No cookies.txt file found. Using free tier.");
       return [];
     }
   } catch (error) {
@@ -156,13 +151,6 @@ distube
     queue.textChannel?.send({ embeds: [embed] });
   })
   .on("error", (error, queue) => {
-    console.error("=== DISTUBE ERROR DEBUG ===");
-    console.error("Error:", error);
-    console.error("Error type:", typeof error);
-    console.error("Queue ID:", queue?.id);
-    console.error("Queue songs length:", queue?.songs?.length);
-    console.error("========================");
-
     let errorMessage = "An error occurred while playing music.";
 
     // Handle different error types
@@ -229,10 +217,6 @@ distube
     queue.textChannel?.send({ embeds: [embed] });
   });
 
-console.log(
-  "✅ Distube initialized with YouTube, SoundCloud, and Spotify support"
-);
-
 // Collections for commands and cooldowns
 client.commands = new Collection();
 client.cooldowns = new Collection();
@@ -248,7 +232,6 @@ for (const file of commandFiles) {
   const command = require(filePath);
   if ("data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);
-    console.log(`📝 Loaded command: ${command.data.name}`);
   } else {
     console.log(
       `⚠️  Command at ${filePath} is missing required "data" or "execute" property.`
@@ -270,7 +253,6 @@ for (const file of eventFiles) {
   } else {
     client.on(event.name, (...args) => event.execute(...args));
   }
-  console.log(`🎯 Loaded event: ${event.name}`);
 }
 
 // Interaction handler
@@ -334,9 +316,6 @@ async function deployCommands() {
     !process.env.CLIENT_ID ||
     process.env.CLIENT_ID === "your_client_id_here"
   ) {
-    console.log(
-      "⚠️  CLIENT_ID not set in .env file. Skipping command deployment."
-    );
     return;
   }
 
@@ -349,13 +328,9 @@ async function deployCommands() {
   const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
   try {
-    console.log("🔄 Started refreshing application (/) commands.");
-
     await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
       body: commands,
     });
-
-    console.log("✅ Successfully reloaded application (/) commands.");
   } catch (error) {
     console.error("❌ Failed to deploy commands:", error);
   }
@@ -364,8 +339,6 @@ async function deployCommands() {
 // Initialize bot
 async function main() {
   try {
-    console.log("🚀 Starting Ishi Music Bot...");
-
     // Check if token exists
     if (!process.env.DISCORD_TOKEN) {
       console.error("❌ DISCORD_TOKEN not found in environment variables!");
@@ -388,13 +361,9 @@ async function main() {
       process.exit(1);
     }
 
-    console.log("🔐 Logging in to Discord...");
     await client.login(process.env.DISCORD_TOKEN);
-
-    console.log("📡 Deploying slash commands...");
     await deployCommands();
-
-    console.log("✅ Bot initialization complete!");
+    console.log("✅ Ishi Music Bot is online!");
   } catch (error) {
     console.error("❌ Failed to start bot:", error.message);
 

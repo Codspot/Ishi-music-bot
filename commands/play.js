@@ -79,8 +79,6 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      console.log(`[DEBUG] Playing with Distube: "${query}"`);
-
       // Enhanced Spotify-priority search strategies
       const isProduction = process.env.NODE_ENV === "production";
 
@@ -114,12 +112,9 @@ module.exports = {
       for (const searchQuery of searchStrategies) {
         try {
           attemptCount++;
-          console.log(
-            `[DEBUG] Attempt ${attemptCount}: Trying search strategy: ${searchQuery}`
-          );
 
-          // Add progressive delay between attempts to avoid rate limiting
-          if (attemptCount > 1 && isRender) {
+          // Add progressive delay between attempts for rate limiting
+          if (attemptCount > 1 && isProduction) {
             const delay = Math.min(attemptCount * 500, 2000); // Progressive delay, max 2 seconds
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
