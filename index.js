@@ -103,12 +103,14 @@ const distube = new DisTube(client, {
         format: "audioonly",
         requestOptions: {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
             "Accept-Encoding": "gzip, deflate",
-            "DNT": "1",
-            "Connection": "keep-alive",
+            DNT: "1",
+            Connection: "keep-alive",
             "Upgrade-Insecure-Requests": "1",
           },
         },
@@ -185,7 +187,8 @@ distube
       if (error.message?.includes("Video unavailable")) {
         errorMessage = "This video is unavailable or region-blocked.";
       } else if (error.message?.includes("Sign in to confirm")) {
-        errorMessage = "YouTube access restricted. Trying alternative sources...";
+        errorMessage =
+          "YouTube access restricted. Trying alternative sources...";
         // Auto-retry with SoundCloud if available
         if (queue && queue.songs.length > 0) {
           const currentSong = queue.songs[0];
@@ -193,11 +196,15 @@ distube
             console.log(`🔄 Retrying with SoundCloud: ${currentSong.name}`);
             setTimeout(() => {
               try {
-                client.distube.play(queue.voiceChannel, `scsearch:${currentSong.name}`, {
-                  textChannel: queue.textChannel,
-                  member: currentSong.user,
-                  skip: true,
-                });
+                client.distube.play(
+                  queue.voiceChannel,
+                  `scsearch:${currentSong.name}`,
+                  {
+                    textChannel: queue.textChannel,
+                    member: currentSong.user,
+                    skip: true,
+                  }
+                );
               } catch (retryError) {
                 console.error("Retry failed:", retryError);
               }
@@ -214,7 +221,10 @@ distube
       } else if (error.name === "PlayError") {
         errorMessage =
           "Failed to play the requested song. Try another song or source.";
-      } else if (error.message?.includes("ytdl") || error.message?.includes("YouTube")) {
+      } else if (
+        error.message?.includes("ytdl") ||
+        error.message?.includes("YouTube")
+      ) {
         errorMessage = "YouTube access issue. Trying alternative sources...";
       } else if (error.message) {
         errorMessage = `Playback error: ${error.message}`;

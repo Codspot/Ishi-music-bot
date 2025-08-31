@@ -1,10 +1,6 @@
 const {
   SlashCommandBuilder,
-    // Clean the query string - remove any potential prefixes
-    let query = rawQuery;
-    if (rawQuery.startsWith("song: ")) {
-      query = rawQuery.substring(6).trim();
-    }uilder,
+  EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } = require("discord.js");
@@ -38,9 +34,6 @@ module.exports = {
     if (rawQuery.startsWith("query: ")) {
       query = rawQuery.substring(7).trim();
     }
-
-    console.log(`[DEBUG] Search - Raw query: "${rawQuery}"`);
-    console.log(`[DEBUG] Search - Cleaned query: "${query}"`);
 
     // Validate query
     if (!query || query.length === 0) {

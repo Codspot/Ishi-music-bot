@@ -82,9 +82,9 @@ module.exports = {
       // Check if it's already a Spotify URL
       const isSpotifyUrl =
         query.includes("spotify.com") || query.includes("spotify:");
-      
+
       // Check if it's a YouTube URL
-      const isYouTubeUrl = 
+      const isYouTubeUrl =
         query.includes("youtube.com") || query.includes("youtu.be");
 
       const searchStrategies = isSpotifyUrl
@@ -94,7 +94,7 @@ module.exports = {
         : isYouTubeUrl
         ? [
             query, // Direct YouTube URL
-            `ytsearch:${query.split('&')[0]}`, // Clean YouTube search as fallback
+            `ytsearch:${query.split("&")[0]}`, // Clean YouTube search as fallback
             `scsearch:${query}`, // SoundCloud fallback
           ]
         : isProduction
@@ -119,7 +119,12 @@ module.exports = {
       for (const searchQuery of searchStrategies) {
         try {
           attemptCount++;
-          console.log(`🔍 Attempt ${attemptCount}: Trying ${searchQuery.substring(0, 50)}...`);
+          console.log(
+            `🔍 Attempt ${attemptCount}: Trying ${searchQuery.substring(
+              0,
+              50
+            )}...`
+          );
 
           // Add progressive delay between attempts for rate limiting
           if (attemptCount > 1 && isProduction) {
@@ -163,20 +168,28 @@ module.exports = {
             ],
           });
         } catch (searchError) {
-          console.log(`❌ Attempt ${attemptCount} failed: ${searchError.message}`);
+          console.log(
+            `❌ Attempt ${attemptCount} failed: ${searchError.message}`
+          );
           lastError = searchError;
-          
+
           // If it's a YouTube bot detection error, skip remaining YouTube strategies
-          if (searchError.message?.includes("Sign in to confirm") || 
-              searchError.message?.includes("bot")) {
-            console.log("🤖 Bot detection encountered, skipping to SoundCloud...");
+          if (
+            searchError.message?.includes("Sign in to confirm") ||
+            searchError.message?.includes("bot")
+          ) {
+            console.log(
+              "🤖 Bot detection encountered, skipping to SoundCloud..."
+            );
             // Skip to SoundCloud strategies
-            const scIndex = searchStrategies.findIndex(s => s.startsWith('scsearch:'));
+            const scIndex = searchStrategies.findIndex((s) =>
+              s.startsWith("scsearch:")
+            );
             if (scIndex > -1 && attemptCount < scIndex + 1) {
               attemptCount = scIndex;
             }
           }
-          
+
           continue; // Try next strategy
         }
       }
@@ -194,11 +207,22 @@ module.exports = {
         errorMessage = `No tracks found for: **${query}**\n\nTry:\n• Different search terms\n• A direct YouTube/Spotify URL\n• Artist + Song name format`;
       } else if (error.message.includes("Permissions")) {
         errorMessage = "I don't have permission to join your voice channel.";
-      } else if (error.message.includes("age") || error.message.includes("Sign in to confirm")) {
-        errorMessage = "This content is age-restricted or requires sign-in. Try a different source.";
-      } else if (error.message.includes("bot") || error.message.includes("Bot")) {
-        errorMessage = "YouTube access is currently limited. Try using a Spotify URL or different search terms.";
-      } else if (error.message.includes("region") || error.message.includes("blocked")) {
+      } else if (
+        error.message.includes("age") ||
+        error.message.includes("Sign in to confirm")
+      ) {
+        errorMessage =
+          "This content is age-restricted or requires sign-in. Try a different source.";
+      } else if (
+        error.message.includes("bot") ||
+        error.message.includes("Bot")
+      ) {
+        errorMessage =
+          "YouTube access is currently limited. Try using a Spotify URL or different search terms.";
+      } else if (
+        error.message.includes("region") ||
+        error.message.includes("blocked")
+      ) {
         errorMessage = "This content is not available in your region.";
       }
 
