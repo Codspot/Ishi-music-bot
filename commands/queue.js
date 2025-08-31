@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
 
@@ -25,7 +25,7 @@ module.exports = {
             "There are no songs in the queue!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -41,7 +41,7 @@ module.exports = {
             `Page ${page} doesn't exist! Maximum page is ${totalPages}.`
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 

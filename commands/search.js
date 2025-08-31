@@ -3,6 +3,7 @@ const {
   EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  MessageFlags
 } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
@@ -44,7 +45,7 @@ module.exports = {
             "Please provide a valid search query!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -57,7 +58,7 @@ module.exports = {
             "You need to join a voice channel first!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 

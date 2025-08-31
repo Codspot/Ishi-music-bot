@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
 
@@ -38,7 +38,7 @@ module.exports = {
             "Please provide a valid song name, URL, or search query!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -51,7 +51,7 @@ module.exports = {
             "You need to join a voice channel first!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -69,13 +69,26 @@ module.exports = {
             "I need permission to join and speak in your voice channel!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
+    // Defer reply immediately to prevent timeout
     await interaction.deferReply();
 
     try {
+      // Show immediate feedback
+      await interaction.editReply({
+        embeds: [
+          Utils.createInfoEmbed(
+            "🔍 Processing Request",
+            `Searching for: **${query}**\n\n${
+              skip ? "⏭️ Will skip current song" : "📝 Will add to queue"
+            }`
+          ),
+        ],
+      });
+
       // Enhanced search strategies with better fallbacks
       const isProduction = process.env.NODE_ENV === "production";
 
@@ -115,6 +128,7 @@ module.exports = {
 
       let lastError = null;
       let attemptCount = 0;
+      let hasResponded = false;
 
       for (const searchQuery of searchStrategies) {
         try {
@@ -134,7 +148,7 @@ module.exports = {
 
           if (skip) {
             // Skip current song and play new one
-            await interaction.client.distube.play(
+            interaction.client.distube.play(
               interaction.member.voice.channel,
               searchQuery,
               {
@@ -145,7 +159,7 @@ module.exports = {
             );
           } else {
             // Add to queue
-            await interaction.client.distube.play(
+            interaction.client.distube.play(
               interaction.member.voice.channel,
               searchQuery,
               {
@@ -157,13 +171,17 @@ module.exports = {
 
           // If we get here, the search was successful
           console.log(`✅ Successfully processed: ${query}`);
-          return interaction.editReply({
+          hasResponded = true;
+          
+          // Respond immediately to prevent interaction timeout
+          // DisTube will handle the detailed success message through events
+          return await interaction.editReply({
             embeds: [
-              Utils.createInfoEmbed(
-                "🎵 Processing Request",
-                `Searching and processing: **${query}**\n\n${
+              Utils.createSuccessEmbed(
+                "✅ Request Processed",
+                `Processing: **${query}**\n\n${
                   skip ? "⏭️ Will skip current song" : "📝 Will add to queue"
-                }`
+                }\n\n*Loading...*`
               ),
             ],
           });
@@ -226,9 +244,20 @@ module.exports = {
         errorMessage = "This content is not available in your region.";
       }
 
-      return interaction.editReply({
-        embeds: [Utils.createErrorEmbed("Playback Error", errorMessage)],
-      });
+      try {
+        return await interaction.editReply({
+          embeds: [Utils.createErrorEmbed("Playback Error", errorMessage)],
+        });
+      } catch (replyError) {
+        console.error("Failed to send error reply:", replyError);
+        // If interaction has expired, try to send a new message to the channel
+        try {
+          const embed = Utils.createErrorEmbed("Playback Error", errorMessage);
+          await interaction.channel.send({ embeds: [embed] });
+        } catch (channelError) {
+          console.error("Failed to send message to channel:", channelError);
+        }
+      }
     }
   },
   cooldown: config.cooldowns.play,

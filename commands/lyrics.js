@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
 
@@ -43,7 +43,7 @@ module.exports = {
               "There is no music currently playing! Use `/lyrics <song>` to search for specific lyrics."
             ),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 

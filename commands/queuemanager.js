@@ -4,6 +4,7 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  MessageFlags
 } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
@@ -24,7 +25,7 @@ module.exports = {
             "There are no songs in the queue!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -36,7 +37,7 @@ module.exports = {
             "You need to be in a voice channel!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -148,7 +149,7 @@ module.exports = {
                     "No tracks to shuffle!"
                   ),
                 ],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
               });
               return;
             }
@@ -160,7 +161,7 @@ module.exports = {
                   `Shuffled ${queue.tracks.size} tracks!`
                 ),
               ],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -173,7 +174,7 @@ module.exports = {
                     "Queue is already empty!"
                   ),
                 ],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
               });
               return;
             }
@@ -186,7 +187,7 @@ module.exports = {
                   `Removed ${clearedCount} tracks from queue!`
                 ),
               ],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -199,7 +200,7 @@ module.exports = {
                     "Need at least 2 tracks to reverse!"
                   ),
                 ],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
               });
               return;
             }
@@ -213,7 +214,7 @@ module.exports = {
                   `Reversed ${tracks.length} tracks!`
                 ),
               ],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -241,7 +242,7 @@ module.exports = {
                   `Removed ${removedCount} duplicate tracks! Queue now has ${uniqueTracks.length} unique tracks.`
                 ),
               ],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -249,7 +250,7 @@ module.exports = {
             const queueEmbed = Utils.createQueueEmbed(queue, 1, 10);
             await buttonInteraction.followUp({
               embeds: [queueEmbed],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -261,7 +262,7 @@ module.exports = {
             );
             await buttonInteraction.followUp({
               embeds: [saveEmbed],
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             });
             break;
 
@@ -324,7 +325,7 @@ module.exports = {
               "Failed to perform the requested action."
             ),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
     });

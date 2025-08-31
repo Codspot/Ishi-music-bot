@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
 
@@ -18,7 +18,7 @@ module.exports = {
             "There is no music currently playing!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -30,7 +30,7 @@ module.exports = {
             "You need to be in a voice channel to skip songs!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -45,7 +45,7 @@ module.exports = {
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -82,7 +82,7 @@ module.exports = {
             "Failed to skip the song. Please try again."
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

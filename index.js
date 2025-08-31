@@ -5,6 +5,7 @@ const {
   Collection,
   REST,
   Routes,
+  MessageFlags,
 } = require("discord.js");
 const { DisTube } = require("distube");
 const { YouTubePlugin } = require("@distube/youtube");
@@ -324,7 +325,7 @@ client.on("interactionCreate", async (interaction) => {
             `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   }
@@ -341,10 +342,14 @@ client.on("interactionCreate", async (interaction) => {
       "There was an error while executing this command!"
     );
 
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
-    } else {
-      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+      } else {
+        await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+      }
+    } catch (replyError) {
+      console.error("❌ Discord client error:", replyError);
     }
   }
 });
