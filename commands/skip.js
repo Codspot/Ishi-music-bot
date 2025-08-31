@@ -8,29 +8,30 @@ module.exports = {
     .setDescription("Skip the current song"),
 
   async execute(interaction) {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply();
+
     const queue = interaction.client.distube.getQueue(interaction.guildId);
 
     if (!queue || !queue.songs.length) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Nothing Playing",
             "There is no music currently playing!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to be in a voice channel to skip songs!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,14 +39,13 @@ module.exports = {
       interaction.guild.members.me.voice.channelId !==
       interaction.member.voice.channelId
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Different Voice Channel",
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -54,7 +54,7 @@ module.exports = {
 
       if (queue.songs.length === 1) {
         interaction.client.distube.stop(interaction.guildId);
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             Utils.createInfoEmbed(
               "⏹️ Queue Ended",
@@ -64,7 +64,7 @@ module.exports = {
         });
       } else {
         interaction.client.distube.skip(interaction.guildId);
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             Utils.createInfoEmbed(
               "⏭️ Song Skipped",
@@ -75,14 +75,13 @@ module.exports = {
       }
     } catch (error) {
       console.error("Skip command error:", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Skip Failed",
             "Failed to skip the song. Please try again."
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

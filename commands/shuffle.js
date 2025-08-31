@@ -8,29 +8,30 @@ module.exports = {
     .setDescription("Shuffle the current queue"),
 
   async execute(interaction) {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply();
+
     const queue = interaction.client.distube.getQueue(interaction.guildId);
 
     if (!queue || queue.songs.length <= 1) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Empty Queue",
             "There are no songs in the queue to shuffle!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to be in a voice channel!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,21 +39,20 @@ module.exports = {
       interaction.guild.members.me.voice.channelId !==
       interaction.member.voice.channelId
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Different Voice Channel",
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     try {
       await interaction.client.distube.shuffle(interaction.guildId);
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createSuccessEmbed(
             "Queue Shuffled",
@@ -62,14 +62,13 @@ module.exports = {
       });
     } catch (error) {
       console.error("Shuffle command error:", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Shuffle Failed",
             "Failed to shuffle the queue. Please try again."
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

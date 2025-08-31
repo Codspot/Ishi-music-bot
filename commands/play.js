@@ -1,4 +1,8 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
+} = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
 
@@ -9,7 +13,7 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("song")
-        .setDescription("Song name, YouTube URL, Spotify URL, or search query")
+        .setDescription("Song name, Spotify URL, SoundCloud URL, or search query")
         .setRequired(true)
     )
     .addBooleanOption((option) =>
@@ -23,6 +27,9 @@ module.exports = {
     const rawQuery = interaction.options.getString("song");
     const skip = interaction.options.getBoolean("skip") || false;
 
+    // Defer reply IMMEDIATELY to prevent timeout - do this before any other operations
+    await interaction.deferReply();
+
     // Clean the query string - remove any potential prefixes
     let query = rawQuery;
     if (rawQuery.startsWith("song: ")) {
@@ -31,27 +38,25 @@ module.exports = {
 
     // Validate query
     if (!query || query.length === 0) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Invalid Query",
             "Please provide a valid song name, URL, or search query!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     // Check if user is in a voice channel
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to join a voice channel first!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -62,19 +67,15 @@ module.exports = {
     if (
       !permissions.has([PermissionFlagsBits.Connect, PermissionFlagsBits.Speak])
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Missing Permissions",
             "I need permission to join and speak in your voice channel!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
-
-    // Defer reply immediately to prevent timeout
-    await interaction.deferReply();
 
     try {
       // Show immediate feedback
@@ -89,41 +90,31 @@ module.exports = {
         ],
       });
 
-      // Enhanced search strategies with better fallbacks
+      // Enhanced search strategies with Spotify metadata and SoundCloud audio
       const isProduction = process.env.NODE_ENV === "production";
 
       // Check if it's already a Spotify URL
       const isSpotifyUrl =
         query.includes("spotify.com") || query.includes("spotify:");
 
-      // Check if it's a YouTube URL
-      const isYouTubeUrl =
-        query.includes("youtube.com") || query.includes("youtu.be");
+      // Check if it's a SoundCloud URL
+      const isSoundCloudUrl =
+        query.includes("soundcloud.com") || query.includes("scsearch:");
 
       const searchStrategies = isSpotifyUrl
         ? [
-            query, // Direct Spotify URL - will use Spotify metadata
+            query, // Direct Spotify URL - will use Spotify metadata and find alternative audio
           ]
-        : isYouTubeUrl
+        : isSoundCloudUrl
         ? [
-            query, // Direct YouTube URL
-            `ytsearch:${query.split("&")[0]}`, // Clean YouTube search as fallback
-            `scsearch:${query}`, // SoundCloud fallback
-          ]
-        : isProduction
-        ? [
-            // For Production: Spotify first, then multiple YouTube strategies, then SoundCloud
-            query, // Original query (Spotify plugin will search first due to plugin order)
-            `scsearch:${query}`, // SoundCloud first as it's more reliable
-            `ytsearch:${query} official`, // YouTube with "official" keyword
-            `ytsearch:${query} audio`, // YouTube with "audio" keyword
-            `ytsearch:${query}`, // Basic YouTube search
+            query, // Direct SoundCloud URL or search
           ]
         : [
-            // For local development: Multiple strategies
-            query, // Original query (tries Spotify first due to plugin order)
-            `scsearch:${query}`, // SoundCloud fallback
-            `ytsearch:${query}`, // YouTube fallback
+            // For any search query: try Spotify first for metadata, then SoundCloud
+            query, // Original query (Spotify plugin will search first for metadata)
+            `scsearch:${query}`, // SoundCloud search
+            `scsearch:${query} official`, // SoundCloud with "official" keyword
+            `scsearch:${query} audio`, // SoundCloud with "audio" keyword
           ];
 
       let lastError = null;
@@ -146,33 +137,49 @@ module.exports = {
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
 
-          if (skip) {
-            // Skip current song and play new one
-            interaction.client.distube.play(
-              interaction.member.voice.channel,
-              searchQuery,
-              {
-                textChannel: interaction.channel,
-                member: interaction.member,
-                skip: true,
-              }
-            );
-          } else {
-            // Add to queue
-            interaction.client.distube.play(
-              interaction.member.voice.channel,
-              searchQuery,
-              {
-                textChannel: interaction.channel,
-                member: interaction.member,
-              }
-            );
+          // Start DisTube operation with timeout protection
+          const playPromise = skip
+            ? interaction.client.distube.play(
+                interaction.member.voice.channel,
+                searchQuery,
+                {
+                  textChannel: interaction.channel,
+                  member: interaction.member,
+                  skip: true,
+                }
+              )
+            : interaction.client.distube.play(
+                interaction.member.voice.channel,
+                searchQuery,
+                {
+                  textChannel: interaction.channel,
+                  member: interaction.member,
+                }
+              );
+
+          // Set a timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Operation timeout")), 10000); // 10 second timeout
+          });
+
+          try {
+            // Race between the play operation and timeout
+            await Promise.race([playPromise, timeoutPromise]);
+          } catch (timeoutError) {
+            if (timeoutError.message === "Operation timeout") {
+              // If it times out, just continue - DisTube will handle it asynchronously
+              console.log(
+                `⏰ Play operation timed out for: ${query}, continuing in background`
+              );
+            } else {
+              throw timeoutError; // Re-throw other errors
+            }
           }
 
           // If we get here, the search was successful
           console.log(`✅ Successfully processed: ${query}`);
           hasResponded = true;
-          
+
           // Respond immediately to prevent interaction timeout
           // DisTube will handle the detailed success message through events
           return await interaction.editReply({
@@ -191,21 +198,15 @@ module.exports = {
           );
           lastError = searchError;
 
-          // If it's a YouTube bot detection error, skip remaining YouTube strategies
+          // If it's a rate limiting error, add delay before next attempt
           if (
-            searchError.message?.includes("Sign in to confirm") ||
-            searchError.message?.includes("bot")
+            searchError.message?.includes("rate limit") ||
+            searchError.message?.includes("too many requests")
           ) {
             console.log(
-              "🤖 Bot detection encountered, skipping to SoundCloud..."
+              "⏱️ Rate limit encountered, adding delay before next attempt..."
             );
-            // Skip to SoundCloud strategies
-            const scIndex = searchStrategies.findIndex((s) =>
-              s.startsWith("scsearch:")
-            );
-            if (scIndex > -1 && attemptCount < scIndex + 1) {
-              attemptCount = scIndex;
-            }
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           }
 
           continue; // Try next strategy
@@ -222,26 +223,25 @@ module.exports = {
         error.message.includes("No result") ||
         error.message.includes("not found")
       ) {
-        errorMessage = `No tracks found for: **${query}**\n\nTry:\n• Different search terms\n• A direct YouTube/Spotify URL\n• Artist + Song name format`;
+        errorMessage = `No tracks found for: **${query}**\n\nTry:\n• Different search terms\n• A direct Spotify/SoundCloud URL\n• Artist + Song name format`;
       } else if (error.message.includes("Permissions")) {
         errorMessage = "I don't have permission to join your voice channel.";
       } else if (
         error.message.includes("age") ||
-        error.message.includes("Sign in to confirm")
+        error.message.includes("restricted")
       ) {
         errorMessage =
-          "This content is age-restricted or requires sign-in. Try a different source.";
-      } else if (
-        error.message.includes("bot") ||
-        error.message.includes("Bot")
-      ) {
-        errorMessage =
-          "YouTube access is currently limited. Try using a Spotify URL or different search terms.";
+          "This content is age-restricted or not available. Try a different source.";
       } else if (
         error.message.includes("region") ||
         error.message.includes("blocked")
       ) {
         errorMessage = "This content is not available in your region.";
+      } else if (
+        error.message.includes("rate limit") ||
+        error.message.includes("too many requests")
+      ) {
+        errorMessage = "Too many requests. Please wait a moment and try again.";
       }
 
       try {

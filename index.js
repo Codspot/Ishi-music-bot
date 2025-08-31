@@ -8,64 +8,12 @@ const {
   MessageFlags,
 } = require("discord.js");
 const { DisTube } = require("distube");
-const { YouTubePlugin } = require("@distube/youtube");
-const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
 const { SpotifyPlugin } = require("@distube/spotify");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 const Utils = require("./utils");
-
-// Function to load YouTube cookies
-function loadYouTubeCookies() {
-  try {
-    const cookiesPath = process.env.YOUTUBE_COOKIES_PATH || "./cookies.txt";
-    if (fs.existsSync(cookiesPath)) {
-      const cookiesContent = fs.readFileSync(cookiesPath, "utf8");
-
-      // Parse Netscape cookie format
-      const youtubeCookies = [];
-      const lines = cookiesContent.split("\n");
-
-      for (const line of lines) {
-        // Skip comments and empty lines
-        if (line.startsWith("#") || line.trim() === "") continue;
-
-        const parts = line.split("\t");
-        if (parts.length >= 7 && parts[0].includes("youtube.com")) {
-          const domain = parts[0];
-          const flag = parts[1];
-          const path = parts[2];
-          const secure = parts[3];
-          const expiration = parts[4];
-          const name = parts[5];
-          const value = parts[6];
-
-          youtubeCookies.push({
-            name: name,
-            value: value,
-            domain: domain.startsWith(".") ? domain : "." + domain,
-            path: path,
-            secure: secure === "TRUE",
-            httpOnly: false,
-          });
-        }
-      }
-
-      if (youtubeCookies.length > 0) {
-        return youtubeCookies;
-      } else {
-        return [];
-      }
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error("⚠️ Error loading YouTube cookies:", error.message);
-    return [];
-  }
-}
 
 // Create Discord client
 const client = new Client({
@@ -77,50 +25,17 @@ const client = new Client({
   ],
 });
 
-// Create Distube instance with plugins (Render-optimized)
-const youtubeCookies = loadYouTubeCookies();
-
+// Create Distube instance with Spotify and SoundCloud plugins only
 const distube = new DisTube(client, {
   emitNewSongOnly: false,
   emitAddSongWhenCreatingQueue: false,
   emitAddListWhenCreatingQueue: false,
   nsfw: false,
   plugins: [
-    // Spotify first - resolves to high-quality YouTube/SoundCloud streams
+    // Spotify first - provides metadata and searches for tracks
     new SpotifyPlugin(),
-    // YouTube second - largest music catalog
-    new YouTubePlugin({
-      cookies: youtubeCookies,
-      ytdlOptions: {
-        quality: "highestaudio",
-        highWaterMark: 1 << 25,
-        filter: "audioonly",
-        format: "audioonly",
-        requestOptions: {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept:
-              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
-            DNT: "1",
-            Connection: "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-          },
-        },
-        retries: 3,
-        requestOptions: {
-          timeout: 30000,
-        },
-      },
-    }),
-    // SoundCloud as fallback
+    // SoundCloud for audio streaming
     new SoundCloudPlugin(),
-    // YtDlp as final fallback
-    new YtDlpPlugin({
-      update: false,
-    }),
   ],
 });
 
@@ -344,9 +259,15 @@ client.on("interactionCreate", async (interaction) => {
 
     try {
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+        await interaction.followUp({
+          embeds: [errorEmbed],
+          flags: MessageFlags.Ephemeral,
+        });
       } else {
-        await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          embeds: [errorEmbed],
+          flags: MessageFlags.Ephemeral,
+        });
       }
     } catch (replyError) {
       console.error("❌ Discord client error:", replyError);

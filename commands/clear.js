@@ -8,29 +8,30 @@ module.exports = {
     .setDescription("Clear the entire queue"),
 
   async execute(interaction) {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply();
+
     const queue = interaction.client.distube.getQueue(interaction.guildId);
 
     if (!queue || queue.songs.length <= 1) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Empty Queue",
             "There are no songs in the queue to clear!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to be in a voice channel!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,14 +39,13 @@ module.exports = {
       interaction.guild.members.me.voice.channelId !==
       interaction.member.voice.channelId
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Different Voice Channel",
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -55,7 +55,7 @@ module.exports = {
       // Clear all songs except the currently playing one
       queue.songs = [queue.songs[0]];
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createInfoEmbed(
             "🗑️ Queue Cleared",
@@ -67,14 +67,13 @@ module.exports = {
       });
     } catch (error) {
       console.error("Clear command error:", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Clear Failed",
             "Failed to clear the queue. Please try again."
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

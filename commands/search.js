@@ -3,7 +3,7 @@ const {
   EmbedBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  MessageFlags
+  MessageFlags,
 } = require("discord.js");
 const Utils = require("../utils");
 const config = require("../config");
@@ -21,14 +21,14 @@ module.exports = {
         .setDescription("Search source")
         .setRequired(false)
         .addChoices(
-          { name: "YouTube", value: "youtube" },
-          { name: "SoundCloud", value: "soundcloud" }
+          { name: "SoundCloud", value: "soundcloud" },
+          { name: "Auto", value: "auto" }
         )
     ),
 
   async execute(interaction) {
     const rawQuery = interaction.options.getString("query");
-    const source = interaction.options.getString("source") || "youtube";
+    const source = interaction.options.getString("source") || "auto";
 
     // Clean the query string - remove any potential prefixes
     let query = rawQuery;
@@ -65,8 +65,15 @@ module.exports = {
     await interaction.deferReply();
 
     try {
+      // Prepare search query based on source
+      let searchQuery = query;
+      if (source === "soundcloud") {
+        searchQuery = `scsearch:${query}`;
+      }
+      // For "auto", let Spotify try first, then SoundCloud will be fallback
+
       // Use Distube's search functionality
-      const searchResults = await interaction.client.distube.search(query, {
+      const searchResults = await interaction.client.distube.search(searchQuery, {
         limit: 10,
         type: "video",
         safeSearch: false,

@@ -8,29 +8,30 @@ module.exports = {
     .setDescription("Play the previous song"),
 
   async execute(interaction) {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply();
+
     const queue = interaction.client.distube.getQueue(interaction.guildId);
 
     if (!queue || !queue.songs.length) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Nothing Playing",
             "There is no music currently playing!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to be in a voice channel!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,33 +39,31 @@ module.exports = {
       interaction.guild.members.me.voice.channelId !==
       interaction.member.voice.channelId
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Different Voice Channel",
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!queue.previousSongs || queue.previousSongs.length === 0) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "No Previous Track",
             "There is no previous track to play!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     try {
       await interaction.client.distube.previous(interaction.guildId);
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createSuccessEmbed(
             "Playing Previous",
@@ -74,14 +73,13 @@ module.exports = {
       });
     } catch (error) {
       console.error("Previous command error:", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Previous Failed",
             "Failed to play previous track. No previous track available."
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

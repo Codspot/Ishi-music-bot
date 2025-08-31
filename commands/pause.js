@@ -8,29 +8,30 @@ module.exports = {
     .setDescription("Pause the current song"),
 
   async execute(interaction) {
+    // Defer reply immediately to prevent timeout
+    await interaction.deferReply();
+
     const queue = interaction.client.distube.getQueue(interaction.guildId);
 
     if (!queue || !queue.playing) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Nothing Playing",
             "There is no music currently playing!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!interaction.member.voice?.channel) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Voice Channel Required",
             "You need to be in a voice channel!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,33 +39,31 @@ module.exports = {
       interaction.guild.members.me.voice.channelId !==
       interaction.member.voice.channelId
     ) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Different Voice Channel",
             "You need to be in the same voice channel as the bot!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (queue.paused) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Already Paused",
             "The music is already paused!"
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     try {
       interaction.client.distube.pause(interaction.guildId);
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createInfoEmbed(
             "⏸️ Music Paused",
@@ -74,14 +73,13 @@ module.exports = {
       });
     } catch (error) {
       console.error("Pause command error:", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           Utils.createErrorEmbed(
             "Pause Failed",
             "Failed to pause the music. Please try again."
           ),
         ],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },
