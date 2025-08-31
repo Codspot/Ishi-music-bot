@@ -1,6 +1,10 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 const Utils = require("../utils");
-const config = require("../config");
+con          // Add progressive delay between attempts for rate limiting
+          if (attemptCount > 1 && isProduction) {
+            const delay = Math.min(attemptCount * 500, 2000); // Progressive delay, max 2 seconds
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }nfig = require("../config");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -81,30 +85,26 @@ module.exports = {
     try {
       console.log(`[DEBUG] Playing with Distube: "${query}"`);
 
-      // YouTube-priority search strategies with enhanced bot detection workarounds
-      const isRender =
-        process.env.RENDER === "true" || process.env.NODE_ENV === "production";
-
-      const searchStrategies = isRender
-        ? [
-            // For Render: YouTube-first with various search formats to avoid detection
-            query, // Original query (tries YouTube first)
-            `ytsearch:${query}`, // Explicit YouTube search
-            `ytsearch:${query} official`, // YouTube with "official" keyword
-            `ytsearch:${query} music video`, // YouTube with "music video"
-            `ytsearch:${query} lyrics`, // YouTube with "lyrics" keyword
-            `ytsearch:${query} audio`, // YouTube with "audio" keyword
-            `ytsearch:${query} song`, // YouTube with "song" keyword
-            `scsearch:${query}`, // SoundCloud as final fallback
-          ]
-        : [
-            // For local development: YouTube priority with fewer attempts
-            query, // Original query (tries YouTube first)
-            `ytsearch:${query}`, // YouTube search
-            `ytsearch:${query} official`, // YouTube with keywords
-            `ytsearch:${query} music video`, // YouTube music video
-            `scsearch:${query}`, // SoundCloud fallback
-          ];
+      // Spotify-priority search strategies for better metadata and quality
+      const isProduction = process.env.NODE_ENV === "production";
+      
+      const searchStrategies = isProduction ? [
+        // For Production: Spotify-first with comprehensive fallbacks
+        query, // Original query (tries Spotify first, then resolves to YouTube/SoundCloud)
+        `spsearch:${query}`, // Explicit Spotify search
+        `spsearch:${query} official`, // Spotify with "official" keyword
+        `ytsearch:${query}`, // YouTube search
+        `ytsearch:${query} official`, // YouTube with "official" keyword
+        `ytsearch:${query} music video`, // YouTube with "music video"
+        `scsearch:${query}`, // SoundCloud as final fallback
+      ] : [
+        // For local development: Spotify priority with fewer attempts
+        query, // Original query (tries Spotify first)
+        `spsearch:${query}`, // Spotify search
+        `ytsearch:${query}`, // YouTube search
+        `ytsearch:${query} official`, // YouTube with keywords
+        `scsearch:${query}`, // SoundCloud fallback
+      ];
 
       let lastError = null;
       let attemptCount = 0;

@@ -90,7 +90,12 @@ const distube = new DisTube(client, {
   emitAddListWhenCreatingQueue: false,
   nsfw: false,
   plugins: [
-    // YouTube first - more content available (user preference)
+    // Spotify first - resolves to high-quality YouTube/SoundCloud streams
+    new SpotifyPlugin({
+      emitEventsAfterFetching: true,
+      parallel: true
+    }),
+    // YouTube second - largest music catalog
     new YouTubePlugin({
       cookies: youtubeCookies,
       ytdlOptions: {
@@ -98,7 +103,6 @@ const distube = new DisTube(client, {
         highWaterMark: 1 << 25,
         filter: "audioonly",
         format: "audioonly",
-        // Render-friendly headers
         requestOptions: {
           headers: {
             "User-Agent":
@@ -109,8 +113,7 @@ const distube = new DisTube(client, {
     }),
     // SoundCloud as fallback
     new SoundCloudPlugin(),
-    new SpotifyPlugin(),
-    // YtDlp as fallback
+    // YtDlp as final fallback
     new YtDlpPlugin({
       update: false,
     }),
