@@ -91,10 +91,7 @@ const distube = new DisTube(client, {
   nsfw: false,
   plugins: [
     // Spotify first - resolves to high-quality YouTube/SoundCloud streams
-    new SpotifyPlugin({
-      emitEventsAfterFetching: true,
-      parallel: true
-    }),
+    new SpotifyPlugin(),
     // YouTube second - largest music catalog
     new YouTubePlugin({
       cookies: youtubeCookies,
@@ -126,14 +123,6 @@ client.distube = distube;
 // Distube Events
 distube
   .on("playSong", (queue, song) => {
-    console.log("=== PLAY SONG DEBUG ===");
-    console.log("Queue ID:", queue?.id);
-    console.log("Song object:", song);
-    console.log("Song name:", song?.name);
-    console.log("Song user:", song?.user);
-    console.log("Song duration:", song?.formattedDuration);
-    console.log("======================");
-
     if (!song || !song.name) {
       console.error("⚠️ Invalid song data received in playSong event");
       const embed = Utils.createErrorEmbed(
@@ -148,12 +137,6 @@ distube
     queue.textChannel?.send({ embeds: [embed] });
   })
   .on("addSong", (queue, song) => {
-    console.log("=== ADD SONG DEBUG ===");
-    console.log("Song object:", song);
-    console.log("Song name:", song?.name);
-    console.log("Song user:", song?.user);
-    console.log("======================");
-
     if (!song || !song.name) {
       console.error("⚠️ Invalid song data received in addSong event");
       return;

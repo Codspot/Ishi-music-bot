@@ -1,10 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 const Utils = require("../utils");
-con          // Add progressive delay between attempts for rate limiting
-          if (attemptCount > 1 && isProduction) {
-            const delay = Math.min(attemptCount * 500, 2000); // Progressive delay, max 2 seconds
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }nfig = require("../config");
+const config = require("../config");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -85,26 +81,32 @@ module.exports = {
     try {
       console.log(`[DEBUG] Playing with Distube: "${query}"`);
 
-      // Spotify-priority search strategies for better metadata and quality
+      // Enhanced Spotify-priority search strategies
       const isProduction = process.env.NODE_ENV === "production";
-      
-      const searchStrategies = isProduction ? [
-        // For Production: Spotify-first with comprehensive fallbacks
-        query, // Original query (tries Spotify first, then resolves to YouTube/SoundCloud)
-        `spsearch:${query}`, // Explicit Spotify search
-        `spsearch:${query} official`, // Spotify with "official" keyword
-        `ytsearch:${query}`, // YouTube search
-        `ytsearch:${query} official`, // YouTube with "official" keyword
-        `ytsearch:${query} music video`, // YouTube with "music video"
-        `scsearch:${query}`, // SoundCloud as final fallback
-      ] : [
-        // For local development: Spotify priority with fewer attempts
-        query, // Original query (tries Spotify first)
-        `spsearch:${query}`, // Spotify search
-        `ytsearch:${query}`, // YouTube search
-        `ytsearch:${query} official`, // YouTube with keywords
-        `scsearch:${query}`, // SoundCloud fallback
-      ];
+
+      // Check if it's already a Spotify URL
+      const isSpotifyUrl =
+        query.includes("spotify.com") || query.includes("spotify:");
+
+      const searchStrategies = isSpotifyUrl
+        ? [
+            query, // Direct Spotify URL - will use Spotify metadata
+          ]
+        : isProduction
+        ? [
+            // For Production: Try to find on Spotify first for better metadata
+            `https://open.spotify.com/search/${encodeURIComponent(query)}`, // Try Spotify search
+            query, // Original query (Spotify plugin will search first due to plugin order)
+            `ytsearch:${query}`, // YouTube fallback
+            `ytsearch:${query} official`, // YouTube with "official" keyword
+            `scsearch:${query}`, // SoundCloud as final fallback
+          ]
+        : [
+            // For local development: Spotify priority
+            query, // Original query (tries Spotify first due to plugin order)
+            `ytsearch:${query}`, // YouTube fallback
+            `scsearch:${query}`, // SoundCloud fallback
+          ];
 
       let lastError = null;
       let attemptCount = 0;
