@@ -29,9 +29,6 @@ module.exports = {
       query = rawQuery.substring(6).trim();
     }
 
-    console.log(`[DEBUG] Raw query: "${rawQuery}"`);
-    console.log(`[DEBUG] Cleaned query: "${query}"`);
-
     // Validate query
     if (!query || query.length === 0) {
       return interaction.reply({
@@ -92,8 +89,7 @@ module.exports = {
           ]
         : isProduction
         ? [
-            // For Production: Try to find on Spotify first for better metadata
-            `https://open.spotify.com/search/${encodeURIComponent(query)}`, // Try Spotify search
+            // For Production: Start with original query (Spotify plugin searches first)
             query, // Original query (Spotify plugin will search first due to plugin order)
             `ytsearch:${query}`, // YouTube fallback
             `ytsearch:${query} official`, // YouTube with "official" keyword
@@ -154,10 +150,6 @@ module.exports = {
             ],
           });
         } catch (searchError) {
-          console.log(
-            `[DEBUG] Search strategy "${searchQuery}" failed:`,
-            searchError.message
-          );
           lastError = searchError;
           continue; // Try next strategy
         }
