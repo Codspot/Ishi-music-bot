@@ -1,6 +1,10 @@
 const {
   SlashCommandBuilder,
-  EmbedBuilder,
+    // Clean the query string - remove any potential prefixes
+    let query = rawQuery;
+    if (rawQuery.startsWith("song: ")) {
+      query = rawQuery.substring(6).trim();
+    }uilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } = require("discord.js");

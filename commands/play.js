@@ -76,30 +76,41 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // Enhanced Spotify-priority search strategies
+      // Enhanced search strategies with better fallbacks
       const isProduction = process.env.NODE_ENV === "production";
 
       // Check if it's already a Spotify URL
       const isSpotifyUrl =
         query.includes("spotify.com") || query.includes("spotify:");
+      
+      // Check if it's a YouTube URL
+      const isYouTubeUrl = 
+        query.includes("youtube.com") || query.includes("youtu.be");
 
       const searchStrategies = isSpotifyUrl
         ? [
             query, // Direct Spotify URL - will use Spotify metadata
           ]
+        : isYouTubeUrl
+        ? [
+            query, // Direct YouTube URL
+            `ytsearch:${query.split('&')[0]}`, // Clean YouTube search as fallback
+            `scsearch:${query}`, // SoundCloud fallback
+          ]
         : isProduction
         ? [
-            // For Production: Start with original query (Spotify plugin searches first)
+            // For Production: Spotify first, then multiple YouTube strategies, then SoundCloud
             query, // Original query (Spotify plugin will search first due to plugin order)
-            `ytsearch:${query}`, // YouTube fallback
+            `scsearch:${query}`, // SoundCloud first as it's more reliable
             `ytsearch:${query} official`, // YouTube with "official" keyword
-            `scsearch:${query}`, // SoundCloud as final fallback
+            `ytsearch:${query} audio`, // YouTube with "audio" keyword
+            `ytsearch:${query}`, // Basic YouTube search
           ]
         : [
-            // For local development: Spotify priority
+            // For local development: Multiple strategies
             query, // Original query (tries Spotify first due to plugin order)
-            `ytsearch:${query}`, // YouTube fallback
             `scsearch:${query}`, // SoundCloud fallback
+            `ytsearch:${query}`, // YouTube fallback
           ];
 
       let lastError = null;
@@ -108,10 +119,11 @@ module.exports = {
       for (const searchQuery of searchStrategies) {
         try {
           attemptCount++;
+          console.log(`🔍 Attempt ${attemptCount}: Trying ${searchQuery.substring(0, 50)}...`);
 
           // Add progressive delay between attempts for rate limiting
           if (attemptCount > 1 && isProduction) {
-            const delay = Math.min(attemptCount * 500, 2000); // Progressive delay, max 2 seconds
+            const delay = Math.min(attemptCount * 1000, 3000); // Progressive delay, max 3 seconds
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
 
@@ -139,6 +151,7 @@ module.exports = {
           }
 
           // If we get here, the search was successful
+          console.log(`✅ Successfully processed: ${query}`);
           return interaction.editReply({
             embeds: [
               Utils.createInfoEmbed(
@@ -150,7 +163,20 @@ module.exports = {
             ],
           });
         } catch (searchError) {
+          console.log(`❌ Attempt ${attemptCount} failed: ${searchError.message}`);
           lastError = searchError;
+          
+          // If it's a YouTube bot detection error, skip remaining YouTube strategies
+          if (searchError.message?.includes("Sign in to confirm") || 
+              searchError.message?.includes("bot")) {
+            console.log("🤖 Bot detection encountered, skipping to SoundCloud...");
+            // Skip to SoundCloud strategies
+            const scIndex = searchStrategies.findIndex(s => s.startsWith('scsearch:'));
+            if (scIndex > -1 && attemptCount < scIndex + 1) {
+              attemptCount = scIndex;
+            }
+          }
+          
           continue; // Try next strategy
         }
       }
@@ -158,7 +184,7 @@ module.exports = {
       // If all strategies failed, throw the last error
       throw lastError;
     } catch (error) {
-      console.error("Play command error:", error);
+      console.error(`❌ Play command error for "${query}":`, error.message);
 
       let errorMessage = "Failed to play the requested track.";
       if (
@@ -168,8 +194,12 @@ module.exports = {
         errorMessage = `No tracks found for: **${query}**\n\nTry:\n• Different search terms\n• A direct YouTube/Spotify URL\n• Artist + Song name format`;
       } else if (error.message.includes("Permissions")) {
         errorMessage = "I don't have permission to join your voice channel.";
-      } else if (error.message.includes("age")) {
-        errorMessage = "This video is age-restricted and cannot be played.";
+      } else if (error.message.includes("age") || error.message.includes("Sign in to confirm")) {
+        errorMessage = "This content is age-restricted or requires sign-in. Try a different source.";
+      } else if (error.message.includes("bot") || error.message.includes("Bot")) {
+        errorMessage = "YouTube access is currently limited. Try using a Spotify URL or different search terms.";
+      } else if (error.message.includes("region") || error.message.includes("blocked")) {
+        errorMessage = "This content is not available in your region.";
       }
 
       return interaction.editReply({

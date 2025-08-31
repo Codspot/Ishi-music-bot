@@ -84,6 +84,12 @@ const distube = new DisTube(client, {
   emitAddSongWhenCreatingQueue: false,
   emitAddListWhenCreatingQueue: false,
   nsfw: false,
+  searchSongs: 5,
+  searchCooldown: 30,
+  leaveOnEmpty: true,
+  leaveOnFinish: false,
+  leaveOnStop: false,
+  savePreviousSongs: true,
   plugins: [
     // Spotify first - resolves to high-quality YouTube/SoundCloud streams
     new SpotifyPlugin(),
@@ -97,9 +103,18 @@ const distube = new DisTube(client, {
         format: "audioonly",
         requestOptions: {
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
           },
+        },
+        retries: 3,
+        requestOptions: {
+          timeout: 30000,
         },
       },
     }),
@@ -158,7 +173,7 @@ distube
       // Error is a string (like "PlayingError")
       if (error.includes("Playing")) {
         errorMessage =
-          "Failed to play the requested song. No songs found or source unavailable.";
+          "Failed to play the requested song. Trying alternative sources...";
       } else if (error.includes("Search")) {
         errorMessage =
           "No songs found for your search. Try different keywords.";
@@ -169,9 +184,26 @@ distube
       // Error is an object with message
       if (error.message?.includes("Video unavailable")) {
         errorMessage = "This video is unavailable or region-blocked.";
-      } else if (error.message?.includes("Sign in to confirm your age")) {
-        errorMessage =
-          "This video requires age verification and cannot be played.";
+      } else if (error.message?.includes("Sign in to confirm")) {
+        errorMessage = "YouTube access restricted. Trying alternative sources...";
+        // Auto-retry with SoundCloud if available
+        if (queue && queue.songs.length > 0) {
+          const currentSong = queue.songs[0];
+          if (currentSong && currentSong.name) {
+            console.log(`🔄 Retrying with SoundCloud: ${currentSong.name}`);
+            setTimeout(() => {
+              try {
+                client.distube.play(queue.voiceChannel, `scsearch:${currentSong.name}`, {
+                  textChannel: queue.textChannel,
+                  member: currentSong.user,
+                  skip: true,
+                });
+              } catch (retryError) {
+                console.error("Retry failed:", retryError);
+              }
+            }, 2000);
+          }
+        }
       } else if (error.message?.includes("Private video")) {
         errorMessage = "This video is private and cannot be accessed.";
       } else if (error.message?.includes("This video is not available")) {
@@ -182,12 +214,15 @@ distube
       } else if (error.name === "PlayError") {
         errorMessage =
           "Failed to play the requested song. Try another song or source.";
-      } else if (error.message?.includes("ytdl")) {
+      } else if (error.message?.includes("ytdl") || error.message?.includes("YouTube")) {
         errorMessage = "YouTube access issue. Trying alternative sources...";
       } else if (error.message) {
         errorMessage = `Playback error: ${error.message}`;
       }
     }
+
+    // Only log errors, not debug info
+    console.error(`❌ DisTube Error: ${errorMessage}`);
 
     const embed = Utils.createErrorEmbed("Playback Error", errorMessage);
 
