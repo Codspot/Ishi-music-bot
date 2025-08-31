@@ -84,12 +84,6 @@ const distube = new DisTube(client, {
   emitAddSongWhenCreatingQueue: false,
   emitAddListWhenCreatingQueue: false,
   nsfw: false,
-  searchSongs: 5,
-  searchCooldown: 30,
-  leaveOnEmpty: true,
-  leaveOnFinish: false,
-  leaveOnStop: false,
-  savePreviousSongs: true,
   plugins: [
     // Spotify first - resolves to high-quality YouTube/SoundCloud streams
     new SpotifyPlugin(),
